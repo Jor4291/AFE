@@ -1,0 +1,23 @@
+# Legacy production app — credentials in source; deploy stays on SiteGround
+public_html/
+
+# Hosting / SSL artifacts
+certificate.key
+certificate.csr
+Manual_backup.zip
+config.txt
+logs/
+webstats/
+
+# Env & local tooling
+.env
+.env.local
+.env.*.local
+.vercel
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

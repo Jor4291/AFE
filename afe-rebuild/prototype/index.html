@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFE Portal v2 — Prototype</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { theme: { extend: { colors: {
+  navy: { DEFAULT:'#0b3a52', dark:'#082b3d', light:'#155172' },
+  brandaccent:'#2f9e8f'
+} } } };
+</script>
+<style>
+  body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;}
+  .screen{display:none} .screen.active{display:block}
+  .step{display:none} .step.active{display:block}
+</style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+
+<!-- ================= TOP BAR ================= -->
+<header class="bg-navy text-white shadow">
+  <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded bg-white/15 grid place-items-center font-bold">NL</div>
+      <span class="font-semibold tracking-wide">IT Equipment Portal</span>
+      <span class="text-xs bg-brandaccent/90 px-2 py-0.5 rounded">v2 prototype</span>
+    </div>
+    <nav id="topnav" class="hidden md:flex items-center gap-1 text-sm">
+      <button data-screen="dashboard" class="navbtn px-3 py-1.5 rounded hover:bg-white/10">Dashboard</button>
+      <button data-screen="wizard" class="navbtn px-3 py-1.5 rounded hover:bg-white/10">New Request</button>
+      <button data-screen="detail" class="navbtn px-3 py-1.5 rounded hover:bg-white/10">Sample Request</button>
+      <span class="mx-2 h-5 w-px bg-white/20"></span>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-white/70">Viewing as</span>
+        <select id="roleSel" class="bg-navy-light text-white text-xs rounded px-2 py-1 border border-white/20">
+          <option value="reviewer">Reviewer (Megan)</option>
+          <option value="bu">BU Leader</option>
+          <option value="it">IT / Helpdesk</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <button data-screen="login" class="navbtn px-3 py-1.5 rounded hover:bg-white/10 text-white/70">Sign out</button>
+    </nav>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-6">
+
+<!-- ================= LOGIN ================= -->
+<section id="login" class="screen active">
+  <div class="min-h-[70vh] grid place-items-center">
+    <div class="w-full max-w-sm bg-white rounded-xl shadow p-8">
+      <div class="text-center mb-6">
+        <div class="w-12 h-12 mx-auto rounded-lg bg-navy text-white grid place-items-center font-bold text-lg">NL</div>
+        <h1 class="mt-3 text-xl font-semibold text-navy">IT Equipment Portal</h1>
+        <p class="text-sm text-slate-500">Sign in to continue</p>
+      </div>
+      <label class="block text-sm font-medium mb-1">Email</label>
+      <input type="email" class="w-full border rounded-lg px-3 py-2 mb-3 focus:ring-2 focus:ring-navy outline-none" value="you@nextlevelstudio.com">
+      <div class="flex items-center justify-between mb-1">
+        <label class="block text-sm font-medium">Password</label>
+        <a href="#" class="text-xs text-navy hover:underline">Forgot?</a>
+      </div>
+      <input type="password" class="w-full border rounded-lg px-3 py-2 mb-5 focus:ring-2 focus:ring-navy outline-none" value="••••••••">
+      <button data-screen="dashboard" class="navbtn w-full bg-navy hover:bg-navy-dark text-white rounded-lg py-2.5 font-medium">Sign in</button>
+
+      <div class="flex items-center gap-3 my-4 text-xs text-slate-400">
+        <span class="flex-1 h-px bg-slate-200"></span>OR<span class="flex-1 h-px bg-slate-200"></span>
+      </div>
+      <button data-screen="dashboard" class="navbtn w-full border border-slate-300 hover:bg-slate-50 rounded-lg py-2.5 font-medium text-sm flex items-center justify-center gap-2">
+        <span class="inline-grid grid-cols-2 gap-0.5 w-3.5 h-3.5"><span class="bg-[#f25022]"></span><span class="bg-[#7fba00]"></span><span class="bg-[#00a4ef]"></span><span class="bg-[#ffb900]"></span></span>
+        Sign in with Microsoft 365
+      </button>
+      <p class="text-xs text-center text-slate-400 mt-4">Email/password works for everyone · Microsoft SSO optional for @nortonlilly.com</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DASHBOARD ================= -->
+<section id="dashboard" class="screen">
+  <div class="flex items-center justify-between mb-5">
+    <div>
+      <h1 class="text-2xl font-semibold text-navy">Requests</h1>
+      <p class="text-sm text-slate-500" id="roleHint">Reviewing the queue as Megan McDaniel</p>
+    </div>
+    <button data-screen="wizard" class="navbtn bg-navy hover:bg-navy-dark text-white rounded-lg px-4 py-2 text-sm font-medium">+ New request</button>
+  </div>
+
+  <!-- pipeline -->
+  <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
+    <div class="bg-white rounded-lg p-4 shadow-sm"><div class="text-2xl font-bold text-slate-700">7</div><div class="text-xs text-slate-500">Submitted</div></div>
+    <div class="bg-white rounded-lg p-4 shadow-sm"><div class="text-2xl font-bold text-amber-600">4</div><div class="text-xs text-slate-500">BU review</div></div>
+    <div class="bg-white rounded-lg p-4 shadow-sm ring-2 ring-brandaccent"><div class="text-2xl font-bold text-brandaccent">3</div><div class="text-xs text-slate-500">Needs your review</div></div>
+    <div class="bg-white rounded-lg p-4 shadow-sm"><div class="text-2xl font-bold text-emerald-600">5</div><div class="text-xs text-slate-500">Approved</div></div>
+    <div class="bg-white rounded-lg p-4 shadow-sm"><div class="text-2xl font-bold text-sky-600">9</div><div class="text-xs text-slate-500">Ordered/Shipped</div></div>
+    <div class="bg-white rounded-lg p-4 shadow-sm"><div class="text-2xl font-bold text-slate-400">2</div><div class="text-xs text-slate-500">Denied</div></div>
+  </div>
+
+  <!-- filters -->
+  <div class="flex flex-wrap gap-2 mb-3 text-sm">
+    <input placeholder="Search name, AFE #, office…" class="border rounded-lg px-3 py-1.5 w-64 outline-none focus:ring-2 focus:ring-navy">
+    <select class="border rounded-lg px-3 py-1.5"><option>All types</option><option>Replacement (repurposed)</option><option>New equipment</option></select>
+    <select class="border rounded-lg px-3 py-1.5"><option>All stages</option><option>Needs your review</option><option>Approved</option></select>
+  </div>
+
+  <!-- table -->
+  <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-slate-500 text-left">
+        <tr>
+          <th class="px-4 py-3 font-medium">AFE #</th>
+          <th class="px-4 py-3 font-medium">Employee</th>
+          <th class="px-4 py-3 font-medium">Type</th>
+          <th class="px-4 py-3 font-medium">Equipment</th>
+          <th class="px-4 py-3 font-medium">Office</th>
+          <th class="px-4 py-3 font-medium">Stage</th>
+          <th class="px-4 py-3 font-medium text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        <tr class="hover:bg-slate-50 cursor-pointer navbtn" data-screen="detail">
+          <td class="px-4 py-3 font-medium text-navy">#4821</td>
+          <td class="px-4 py-3">Dana Ruiz</td>
+          <td class="px-4 py-3"><span class="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded">New equipment</span></td>
+          <td class="px-4 py-3">Laptop</td>
+          <td class="px-4 py-3">Houston</td>
+          <td class="px-4 py-3"><span class="text-xs bg-brandaccent/15 text-brandaccent px-2 py-0.5 rounded font-medium">Needs your review</span></td>
+          <td class="px-4 py-3 text-right"><span class="text-navy text-xs font-medium">Review →</span></td>
+        </tr>
+        <tr class="hover:bg-slate-50 cursor-pointer navbtn" data-screen="detail">
+          <td class="px-4 py-3 font-medium text-navy">#4820</td>
+          <td class="px-4 py-3">Marc Ellison</td>
+          <td class="px-4 py-3"><span class="text-xs bg-sky-100 text-sky-700 px-2 py-0.5 rounded">Replacement</span></td>
+          <td class="px-4 py-3">Phone &amp; Laptop</td>
+          <td class="px-4 py-3">Mobile (Corp)</td>
+          <td class="px-4 py-3"><span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-medium">Approved</span></td>
+          <td class="px-4 py-3 text-right"><span class="text-navy text-xs font-medium">View →</span></td>
+        </tr>
+        <tr class="hover:bg-slate-50 cursor-pointer navbtn" data-screen="detail">
+          <td class="px-4 py-3 font-medium text-navy">#4819</td>
+          <td class="px-4 py-3">Priya Nair</td>
+          <td class="px-4 py-3"><span class="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded">New equipment</span></td>
+          <td class="px-4 py-3">Desktop PC</td>
+          <td class="px-4 py-3">Savannah</td>
+          <td class="px-4 py-3"><span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium">BU review</span></td>
+          <td class="px-4 py-3 text-right"><span class="text-slate-400 text-xs">Waiting</span></td>
+        </tr>
+        <tr class="hover:bg-slate-50 cursor-pointer navbtn" data-screen="detail">
+          <td class="px-4 py-3 font-medium text-navy">#4818</td>
+          <td class="px-4 py-3">Tom Becker</td>
+          <td class="px-4 py-3"><span class="text-xs bg-sky-100 text-sky-700 px-2 py-0.5 rounded">Replacement</span></td>
+          <td class="px-4 py-3">MiFi</td>
+          <td class="px-4 py-3">Seattle</td>
+          <td class="px-4 py-3"><span class="text-xs bg-sky-100 text-sky-700 px-2 py-0.5 rounded font-medium">Shipped</span></td>
+          <td class="px-4 py-3 text-right"><span class="text-navy text-xs font-medium">View →</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================= REQUEST WIZARD ================= -->
+<section id="wizard" class="screen">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-2xl font-semibold text-navy mb-1">New equipment request</h1>
+    <p class="text-sm text-slate-500 mb-6">Step <span id="stepNum">1</span> of 4</p>
+
+    <!-- progress -->
+    <div class="flex items-center mb-8">
+      <template></template>
+      <div class="flex-1 flex items-center" id="progress">
+        <div class="wstep flex items-center gap-2"><div class="dot w-7 h-7 rounded-full grid place-items-center text-xs font-semibold">1</div><span class="text-xs hidden sm:inline">Equipment</span></div>
+        <div class="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+        <div class="wstep flex items-center gap-2"><div class="dot w-7 h-7 rounded-full grid place-items-center text-xs font-semibold">2</div><span class="text-xs hidden sm:inline">Employee</span></div>
+        <div class="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+        <div class="wstep flex items-center gap-2"><div class="dot w-7 h-7 rounded-full grid place-items-center text-xs font-semibold">3</div><span class="text-xs hidden sm:inline">Details</span></div>
+        <div class="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+        <div class="wstep flex items-center gap-2"><div class="dot w-7 h-7 rounded-full grid place-items-center text-xs font-semibold">4</div><span class="text-xs hidden sm:inline">Approver</span></div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <!-- step 1 -->
+      <div class="step active" data-step="1">
+        <h2 class="font-medium text-slate-700 mb-4">What's needed?</h2>
+        <label class="block text-sm font-medium mb-1">Equipment type</label>
+        <select class="w-full border rounded-lg px-3 py-2 mb-4"><option>Laptop</option><option>Desktop PC</option><option>Phone</option><option>Phone &amp; Laptop</option><option>MiFi</option><option>Other</option></select>
+        <label class="block text-sm font-medium mb-2">Request type</label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="border rounded-lg p-3 cursor-pointer hover:border-navy"><input type="radio" name="rt" class="mr-2">Replacement<span class="block text-xs text-slate-500">Repurposed / replacing existing</span></label>
+          <label class="border rounded-lg p-3 cursor-pointer hover:border-navy"><input type="radio" name="rt" class="mr-2">New equipment<span class="block text-xs text-slate-500">Net-new purchase</span></label>
+        </div>
+      </div>
+      <!-- step 2 -->
+      <div class="step" data-step="2">
+        <h2 class="font-medium text-slate-700 mb-4">Who is it for?</h2>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-sm font-medium mb-1">First name</label><input class="w-full border rounded-lg px-3 py-2"></div>
+          <div><label class="block text-sm font-medium mb-1">Last name</label><input class="w-full border rounded-lg px-3 py-2"></div>
+          <div><label class="block text-sm font-medium mb-1">Email</label><input class="w-full border rounded-lg px-3 py-2"></div>
+          <div><label class="block text-sm font-medium mb-1">Phone</label><input class="w-full border rounded-lg px-3 py-2"></div>
+          <div><label class="block text-sm font-medium mb-1">Office</label><input class="w-full border rounded-lg px-3 py-2" value="Houston"></div>
+          <div><label class="block text-sm font-medium mb-1">Business unit</label><input class="w-full border rounded-lg px-3 py-2"></div>
+        </div>
+      </div>
+      <!-- step 3 -->
+      <div class="step" data-step="3">
+        <h2 class="font-medium text-slate-700 mb-4">Details</h2>
+        <label class="block text-sm font-medium mb-1">Cost center</label>
+        <input class="w-full border rounded-lg px-3 py-2 mb-4">
+        <label class="block text-sm font-medium mb-1">Shipping address</label>
+        <textarea class="w-full border rounded-lg px-3 py-2 mb-4" rows="2"></textarea>
+        <label class="block text-sm font-medium mb-1">Reason / justification</label>
+        <textarea class="w-full border rounded-lg px-3 py-2" rows="3" placeholder="Explain why this equipment is needed…"></textarea>
+      </div>
+      <!-- step 4 -->
+      <div class="step" data-step="4">
+        <h2 class="font-medium text-slate-700 mb-4">Send for approval</h2>
+        <label class="block text-sm font-medium mb-1">Business Unit Leader</label>
+        <select class="w-full border rounded-lg px-3 py-2 mb-4"><option>Denny Garner</option><option>Andreas Ebensperger</option><option>Stefan Wolf</option><option>Megan McDaniel</option></select>
+        <div class="bg-slate-50 border rounded-lg p-4 text-sm text-slate-600">
+          <p class="font-medium text-slate-700 mb-1">What happens next</p>
+          Repurposed requests → your BU Leader approves and it goes straight to the Helpdesk (Megan is notified).
+          Net-new requests → after BU approval, Megan &amp; Stefan review before the Helpdesk is told.
+        </div>
+      </div>
+
+      <div class="flex justify-between mt-6">
+        <button id="prevBtn" class="px-4 py-2 rounded-lg border text-slate-600 hover:bg-slate-50">Back</button>
+        <button id="nextBtn" class="px-5 py-2 rounded-lg bg-navy hover:bg-navy-dark text-white font-medium">Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= REQUEST DETAIL ================= -->
+<section id="detail" class="screen">
+  <button data-screen="dashboard" class="navbtn text-sm text-navy mb-4">← Back to requests</button>
+  <div class="grid md:grid-cols-3 gap-6">
+    <!-- left: facts -->
+    <div class="md:col-span-2 bg-white rounded-xl shadow-sm p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h1 class="text-xl font-semibold text-navy">AFE #4821 — Dana Ruiz</h1>
+          <p class="text-sm text-slate-500">Submitted Jun 28, 2026 · Houston</p>
+        </div>
+        <span class="text-xs bg-brandaccent/15 text-brandaccent px-3 py-1 rounded-full font-medium">Needs your review</span>
+      </div>
+      <dl class="grid grid-cols-2 gap-y-3 text-sm">
+        <div><dt class="text-slate-400">Request type</dt><dd class="font-medium">New equipment</dd></div>
+        <div><dt class="text-slate-400">Equipment</dt><dd class="font-medium">Laptop</dd></div>
+        <div><dt class="text-slate-400">Business unit</dt><dd class="font-medium">Port Agency</dd></div>
+        <div><dt class="text-slate-400">Cost center</dt><dd class="font-medium">4410</dd></div>
+        <div><dt class="text-slate-400">Email</dt><dd class="font-medium">druiz@nortonlilly.com</dd></div>
+        <div><dt class="text-slate-400">Submitted to</dt><dd class="font-medium">Denny Garner</dd></div>
+        <div class="col-span-2"><dt class="text-slate-400">Reason</dt><dd class="font-medium">New hire replacing a role; prior laptop was returned to pool and reassigned.</dd></div>
+      </dl>
+
+      <!-- reviewer action -->
+      <div class="mt-6 border-t pt-5">
+        <p class="text-sm font-medium text-slate-700 mb-2">Your decision (Reviewer)</p>
+        <textarea class="w-full border rounded-lg px-3 py-2 text-sm mb-3" rows="2" placeholder="Add a note (optional)…"></textarea>
+        <div class="flex gap-3">
+          <button class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-4 py-2 text-sm font-medium">Approve → notify Helpdesk</button>
+          <button class="bg-white border border-red-300 text-red-600 hover:bg-red-50 rounded-lg px-4 py-2 text-sm font-medium">Deny</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- right: audit timeline -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h2 class="font-medium text-slate-700 mb-4">Audit timeline</h2>
+      <ol class="relative border-l border-slate-200 ml-2 space-y-5 text-sm">
+        <li class="pl-4">
+          <span class="absolute -left-1.5 w-3 h-3 rounded-full bg-emerald-500"></span>
+          <p class="font-medium">Submitted</p><p class="text-slate-500 text-xs">Dana Ruiz · Jun 28, 9:14 AM</p>
+        </li>
+        <li class="pl-4">
+          <span class="absolute -left-1.5 w-3 h-3 rounded-full bg-emerald-500"></span>
+          <p class="font-medium">BU Leader approved</p><p class="text-slate-500 text-xs">Denny Garner · Jun 28, 2:03 PM</p>
+        </li>
+        <li class="pl-4">
+          <span class="absolute -left-1.5 w-3 h-3 rounded-full bg-brandaccent animate-pulse"></span>
+          <p class="font-medium">Awaiting reviewer</p><p class="text-slate-500 text-xs">Megan &amp; Stefan notified · Jun 28, 2:03 PM</p>
+        </li>
+        <li class="pl-4">
+          <span class="absolute -left-1.5 w-3 h-3 rounded-full bg-slate-300"></span>
+          <p class="text-slate-400">Final approval → Helpdesk order</p>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="text-center text-xs text-slate-400 py-6">AFE Portal v2 — interactive prototype (sample data). Not connected to a live database.</footer>
+
+<script>
+// screen switching
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('topnav').style.visibility = (id==='login') ? 'hidden' : 'visible';
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>show(b.dataset.screen)));
+
+// role hint
+const hints={reviewer:'Reviewing the queue as Megan McDaniel',bu:'Approving requests submitted to you',it:'Fulfilling approved requests',admin:'Full access · users, roles, audit log'};
+document.getElementById('roleSel').addEventListener('change',e=>{document.getElementById('roleHint').textContent=hints[e.target.value];});
+
+// wizard
+let step=1; const maxStep=4;
+function renderStep(){
+  document.querySelectorAll('.step').forEach(s=>s.classList.toggle('active', +s.dataset.step===step));
+  document.getElementById('stepNum').textContent=step;
+  document.querySelectorAll('#progress .dot').forEach((d,i)=>{
+    const on=(i+1)<=step;
+    d.className='dot w-7 h-7 rounded-full grid place-items-center text-xs font-semibold '+(on?'bg-navy text-white':'bg-slate-200 text-slate-500');
+  });
+  document.getElementById('prevBtn').style.visibility = step===1?'hidden':'visible';
+  document.getElementById('nextBtn').textContent = step===maxStep?'Submit request':'Next';
+}
+document.getElementById('nextBtn').addEventListener('click',()=>{ if(step<maxStep){step++;renderStep();} else {show('dashboard');step=1;renderStep();} });
+document.getElementById('prevBtn').addEventListener('click',()=>{ if(step>1){step--;renderStep();} });
+renderStep();
+show('login');
+</script>
+</body>
+</html>
