@@ -71,26 +71,40 @@ const ROLE_NAME = {reviewer:'Megan McDaniel',bu:'Denny Garner',it:'Help Desk',ad
 
 let state, role='reviewer', view='login', currentId=null, wizard={step:1,data:{}}, liveMode=false, liveError=null;
 
-const fetchOpts = { credentials: 'same-origin', headers: { Accept: 'application/json' } };
-const DEMO_USER = 'Admin';
-const DEMO_PASS = 'AfePortal123!@#';
 const AUTH_KEY = 'afe_authed';
+const AUTH_TOKEN_KEY = 'afe_auth';
 
 function isAuthed(){ return sessionStorage.getItem(AUTH_KEY)==='1'; }
-function setAuthed(on){ if(on) sessionStorage.setItem(AUTH_KEY,'1'); else sessionStorage.removeItem(AUTH_KEY); }
+function setAuthed(on){
+  if(on) sessionStorage.setItem(AUTH_KEY,'1');
+  else { sessionStorage.removeItem(AUTH_KEY); sessionStorage.removeItem(AUTH_TOKEN_KEY); }
+}
+function authToken(user, pass){ return 'Basic '+btoa(`${user}:${pass}`); }
+function apiFetch(url, opts={}){
+  const headers={Accept:'application/json',...(opts.headers||{})};
+  const auth=sessionStorage.getItem(AUTH_TOKEN_KEY);
+  if(auth) headers.Authorization=auth;
+  return fetch(url,{...opts,credentials:'same-origin',headers});
+}
 
-function tryLogin(){
+async function tryLogin(){
   const user=(document.getElementById('loginUser')?.value||'').trim();
   const pass=document.getElementById('loginPass')?.value||'';
   const err=document.getElementById('loginError');
-  if(user===DEMO_USER && pass===DEMO_PASS){
-    err?.classList.add('hidden');
+  const token=authToken(user, pass);
+  try{
+    const res=await fetch('/api/auth-check',{headers:{Authorization:token,Accept:'application/json'}});
+    if(!res.ok) throw new Error('Invalid credentials');
+    if(err) err.classList.add('hidden');
+    sessionStorage.setItem(AUTH_TOKEN_KEY, token);
     setAuthed(true);
+    await loadLive();
     go('dashboard');
     return true;
+  }catch{
+    if(err){ err.textContent='Invalid username or password.'; err.classList.remove('hidden'); }
+    return false;
   }
-  if(err){ err.textContent='Invalid username or password. Use Admin / AfePortal123!@#'; err.classList.remove('hidden'); }
-  return false;
 }
 
 function seed(){
@@ -131,11 +145,13 @@ function updateModeBanner(message){
   }
 }
 async function loadLive(){
+  if(!isAuthed()) return false;
   updateModeBanner('Loading requests from SiteGround…');
   try{
-    const res=await fetch('/api/requests?limit=200', fetchOpts);
+    const res=await apiFetch('/api/requests?limit=200');
     const data=await res.json().catch(()=>({}));
     if(!res.ok || !data.live || !Array.isArray(data.requests)){
+      if(res.status===401){ setAuthed(false); throw new Error('Session expired — sign in again.'); }
       throw new Error(data.error || `Failed to load requests (HTTP ${res.status})`);
     }
     liveMode=true;
@@ -155,7 +171,7 @@ async function loadLive(){
     return false;
   }
 }
-function retryLive(){ loadLive().then(ok=>{ if(ok) render(); }); }
+function retryLive(){ if(!isAuthed()){ go('login'); return; } loadLive().then(ok=>{ if(ok) render(); }); }
 
 /* ---- workflow transitions (pure-ish; also unit-tested in Node) ---- */
 function buApprove(r){ log(r,'BU Leader approved',ROLE_NAME.bu);
@@ -185,7 +201,7 @@ function newRequest(){ if(liveMode){ alert('New requests are disabled in live re
 async function open(id){
   if(liveMode && !state.requests.find(x=>x.id===id)){
     try{
-      const res=await fetch('/api/requests?id='+id, fetchOpts);
+      const res=await apiFetch('/api/requests?id='+id);
       const data=await res.json();
       if(res.ok && data.request) state.requests.unshift(data.request);
     }catch(e){ console.warn(e); }

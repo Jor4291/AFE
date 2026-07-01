@@ -217,28 +217,42 @@ const STAGES={
   received:{label:'Received',cls:'bg-slate-200 text-slate-600'},
   denied:{label:'Denied',cls:'bg-red-100 text-red-700'},
 };
-const fetchOpts={credentials:'same-origin',headers:{Accept:'application/json'}};
-const DEMO_USER='Admin';
-const DEMO_PASS='AfePortal123!@#';
 const AUTH_KEY='afe_authed';
+const AUTH_TOKEN_KEY='afe_auth';
 let requests=[], total=0, liveMode=false, liveError=null, currentId=null;
 
 function isAuthed(){ return sessionStorage.getItem(AUTH_KEY)==='1'; }
-function setAuthed(on){ if(on) sessionStorage.setItem(AUTH_KEY,'1'); else sessionStorage.removeItem(AUTH_KEY); }
+function setAuthed(on){
+  if(on) sessionStorage.setItem(AUTH_KEY,'1');
+  else { sessionStorage.removeItem(AUTH_KEY); sessionStorage.removeItem(AUTH_TOKEN_KEY); }
+}
+function authToken(user, pass){ return 'Basic '+btoa(`${user}:${pass}`); }
+function apiFetch(url, opts={}){
+  const headers={Accept:'application/json',...(opts.headers||{})};
+  const auth=sessionStorage.getItem(AUTH_TOKEN_KEY);
+  if(auth) headers.Authorization=auth;
+  return fetch(url,{...opts,credentials:'same-origin',headers});
+}
 
-function tryLogin(){
+async function tryLogin(){
   const user=document.getElementById('loginUser').value.trim();
   const pass=document.getElementById('loginPass').value;
   const err=document.getElementById('loginError');
-  if(user===DEMO_USER && pass===DEMO_PASS){
+  const token=authToken(user, pass);
+  try{
+    const res=await fetch('/api/auth-check',{headers:{Authorization:token,Accept:'application/json'}});
+    if(!res.ok) throw new Error('Invalid credentials');
     err.classList.add('hidden');
+    sessionStorage.setItem(AUTH_TOKEN_KEY, token);
     setAuthed(true);
+    await loadLive();
     show('dashboard');
     return true;
+  }catch{
+    err.textContent='Invalid username or password.';
+    err.classList.remove('hidden');
+    return false;
   }
-  err.textContent='Invalid username or password. Use Admin / AfePortal123!@#';
-  err.classList.remove('hidden');
-  return false;
 }
 
 function badge(stage){const s=STAGES[stage]||{label:stage,cls:'bg-slate-100'};return `<span class="text-xs ${s.cls} px-2 py-0.5 rounded font-medium">${s.label}</span>`;}
@@ -355,7 +369,7 @@ async function openDetail(id){
   let r=requests.find(x=>x.id===id);
   if(!r && liveMode){
     try{
-      const res=await fetch('/api/requests?id='+id, fetchOpts);
+      const res=await apiFetch('/api/requests?id='+id);
       const data=await res.json();
       if(res.ok && data.request){ r=data.request; requests.unshift(r); }
     }catch(e){ console.warn(e); }
@@ -364,16 +378,25 @@ async function openDetail(id){
 }
 
 async function loadLive(){
+  if(!isAuthed()) return false;
   updateBanner('Loading requests from SiteGround…');
   try{
-    const res=await fetch('/api/requests?limit=200', fetchOpts);
+    const res=await apiFetch('/api/requests?limit=200');
     const data=await res.json().catch(()=>({}));
-    if(!res.ok || !data.live || !Array.isArray(data.requests)) throw new Error(data.error||`HTTP ${res.status}`);
+    if(!res.ok || !data.live || !Array.isArray(data.requests)){
+      if(res.status===401){ setAuthed(false); throw new Error('Session expired — sign in again.'); }
+      throw new Error(data.error||`HTTP ${res.status}`);
+    }
     liveMode=true; liveError=null; requests=data.requests; total=data.total||requests.length;
     renderPipeline(); renderTable(); updateBanner();
     return true;
   }catch(e){
     liveMode=false; liveError=e.message||String(e); requests=[]; total=0;
+    if(String(e.message||'').includes('401') || liveError.includes('401')){
+      setAuthed(false);
+      show('login');
+      return false;
+    }
     renderPipeline(); renderTable(); updateBanner();
     return false;
   }
