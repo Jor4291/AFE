@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AFE Portal v2 — Prototype</title>
+<script>
+if(sessionStorage.getItem('afe_authed')!=='1') location.replace('/');
+</script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = { theme: { extend: { colors: {
@@ -19,7 +22,7 @@ tailwind.config = { theme: { extend: { colors: {
 </head>
 <body class="bg-slate-100 text-slate-800">
 
-<div id="modeBanner" class="bg-sky-100 text-sky-900 text-center text-xs py-1.5">Loading live data…</div>
+<div id="modeBanner" class="bg-sky-100 text-sky-900 text-center text-xs py-1.5 hidden">Loading…</div>
 
 <!-- ================= TOP BAR ================= -->
 <header class="bg-navy text-white shadow">
@@ -43,46 +46,15 @@ tailwind.config = { theme: { extend: { colors: {
           <option value="admin">Admin</option>
         </select>
       </div>
-      <button data-screen="login" class="navbtn px-3 py-1.5 rounded hover:bg-white/10 text-white/70">Sign out</button>
+      <button type="button" id="signOutBtn" class="px-3 py-1.5 rounded hover:bg-white/10 text-white/70">Sign out</button>
     </nav>
   </div>
 </header>
 
 <main class="max-w-6xl mx-auto px-4 py-6">
 
-<!-- ================= LOGIN ================= -->
-<section id="login" class="screen active">
-  <div class="min-h-[70vh] grid place-items-center">
-    <div class="w-full max-w-sm bg-white rounded-xl shadow p-8">
-      <div class="text-center mb-6">
-        <div class="w-12 h-12 mx-auto rounded-lg bg-navy text-white grid place-items-center font-bold text-lg">NL</div>
-        <h1 class="mt-3 text-xl font-semibold text-navy">IT Equipment Portal</h1>
-        <p class="text-sm text-slate-500">Sign in to continue</p>
-      </div>
-      <label class="block text-sm font-medium mb-1">Username</label>
-      <input id="loginUser" type="text" autocomplete="username" placeholder="Admin" class="w-full border rounded-lg px-3 py-2 mb-3 focus:ring-2 focus:ring-navy outline-none">
-      <div class="flex items-center justify-between mb-1">
-        <label class="block text-sm font-medium">Password</label>
-        <a href="#" class="text-xs text-navy hover:underline">Forgot?</a>
-      </div>
-      <input id="loginPass" type="password" autocomplete="current-password" placeholder="AfePortal123!@#" class="w-full border rounded-lg px-3 py-2 mb-2 focus:ring-2 focus:ring-navy outline-none">
-      <p id="loginError" class="text-red-600 text-xs mb-3 hidden"></p>
-      <button type="button" id="loginBtn" class="w-full bg-navy hover:bg-navy-dark text-white rounded-lg py-2.5 font-medium">Sign in</button>
-
-      <div class="flex items-center gap-3 my-4 text-xs text-slate-400">
-        <span class="flex-1 h-px bg-slate-200"></span>OR<span class="flex-1 h-px bg-slate-200"></span>
-      </div>
-      <button type="button" id="ssoBtn" class="w-full border border-slate-300 hover:bg-slate-50 rounded-lg py-2.5 font-medium text-sm flex items-center justify-center gap-2">
-        <span class="inline-grid grid-cols-2 gap-0.5 w-3.5 h-3.5"><span class="bg-[#f25022]"></span><span class="bg-[#7fba00]"></span><span class="bg-[#00a4ef]"></span><span class="bg-[#ffb900]"></span></span>
-        Sign in with Microsoft 365
-      </button>
-      <p class="text-xs text-center text-slate-400 mt-4">Demo login · Username <span class="font-medium text-slate-500">Admin</span> · Password <span class="font-medium text-slate-500">AfePortal123!@#</span></p>
-    </div>
-  </div>
-</section>
-
 <!-- ================= DASHBOARD ================= -->
-<section id="dashboard" class="screen">
+<section id="dashboard" class="screen active">
   <div class="flex items-center justify-between mb-5">
     <div>
       <h1 class="text-2xl font-semibold text-navy">Requests</h1>
@@ -234,26 +206,9 @@ function apiFetch(url, opts={}){
   return fetch(url,{...opts,credentials:'same-origin',headers});
 }
 
-async function tryLogin(){
-  const user=document.getElementById('loginUser').value.trim();
-  const pass=document.getElementById('loginPass').value;
-  const err=document.getElementById('loginError');
-  const token=authToken(user, pass);
-  try{
-    const res=await fetch('/api/auth-check',{headers:{Authorization:token,Accept:'application/json'}});
-    if(!res.ok) throw new Error('Invalid credentials');
-    err.classList.add('hidden');
-    sessionStorage.setItem(AUTH_TOKEN_KEY, token);
-    setAuthed(true);
-    await loadLive();
-    show('dashboard');
-    return true;
-  }catch{
-    err.textContent='Invalid username or password.';
-    err.classList.remove('hidden');
-    return false;
-  }
-}
+function signOut(){ location.replace('/'); }
+
+async function tryLogin(){ location.replace('/'); }
 
 function badge(stage){const s=STAGES[stage]||{label:stage,cls:'bg-slate-100'};return `<span class="text-xs ${s.cls} px-2 py-0.5 rounded font-medium">${s.label}</span>`;}
 function typeBadge(t){return t==='new_equipment'?`<span class="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded">New equipment</span>`:`<span class="text-xs bg-sky-100 text-sky-700 px-2 py-0.5 rounded">Replacement</span>`;}
@@ -261,6 +216,7 @@ function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 
 function updateBanner(msg){
   const el=document.getElementById('modeBanner');
+  el.classList.remove('hidden');
   if(liveMode){
     el.className='bg-emerald-100 text-emerald-900 text-center text-xs py-1.5';
     el.textContent=`Live data from SiteGround — showing ${requests.length} of ${total} requests (read-only)`;
@@ -378,13 +334,12 @@ async function openDetail(id){
 }
 
 async function loadLive(){
-  if(!isAuthed()) return false;
   updateBanner('Loading requests from SiteGround…');
   try{
     const res=await apiFetch('/api/requests?limit=200');
     const data=await res.json().catch(()=>({}));
     if(!res.ok || !data.live || !Array.isArray(data.requests)){
-      if(res.status===401){ setAuthed(false); throw new Error('Session expired — sign in again.'); }
+      if(res.status===401){ setAuthed(false); location.replace('/'); return false; }
       throw new Error(data.error||`HTTP ${res.status}`);
     }
     liveMode=true; liveError=null; requests=data.requests; total=data.total||requests.length;
@@ -392,11 +347,6 @@ async function loadLive(){
     return true;
   }catch(e){
     liveMode=false; liveError=e.message||String(e); requests=[]; total=0;
-    if(String(e.message||'').includes('401') || liveError.includes('401')){
-      setAuthed(false);
-      show('login');
-      return false;
-    }
     renderPipeline(); renderTable(); updateBanner();
     return false;
   }
@@ -404,24 +354,13 @@ async function loadLive(){
 
 // screen switching
 function show(id){
-  if(id!=='login' && !isAuthed()){ id='login'; }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  document.getElementById('topnav').style.visibility = (id==='login') ? 'hidden' : 'visible';
   if(id==='dashboard') renderTable();
   window.scrollTo(0,0);
 }
-document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>{
-  if(b.dataset.screen==='login') setAuthed(false);
-  show(b.dataset.screen);
-}));
-document.getElementById('loginBtn').addEventListener('click', tryLogin);
-document.getElementById('ssoBtn').addEventListener('click',()=>{
-  document.getElementById('loginError').textContent='Microsoft SSO is not enabled in this demo. Use Admin / AfePortal123!@#';
-  document.getElementById('loginError').classList.remove('hidden');
-});
-document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') tryLogin(); });
-document.getElementById('loginUser').addEventListener('keydown', e=>{ if(e.key==='Enter') tryLogin(); });
+document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>show(b.dataset.screen)));
+document.getElementById('signOutBtn').addEventListener('click', signOut);
 
 // role hint
 const hints={reviewer:'Reviewing the queue as Megan McDaniel',bu:'Approving requests submitted to you',it:'Fulfilling approved requests',admin:'Full access · users, roles, audit log'};
@@ -448,7 +387,7 @@ function renderStep(){
 document.getElementById('nextBtn').addEventListener('click',()=>{ if(liveMode){alert('New requests are disabled in live read-only mode.');return;} if(step<maxStep){step++;renderStep();} else {show('dashboard');step=1;renderStep();} });
 document.getElementById('prevBtn').addEventListener('click',()=>{ if(step>1){step--;renderStep();} });
 renderStep();
-loadLive().finally(()=>show(isAuthed()?'dashboard':'login'));
+loadLive().finally(()=>show('dashboard'));
 </script>
 </body>
 </html>

@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AFE Portal v2 — Interactive Demo</title>
+<script>
+if(sessionStorage.getItem('afe_authed')!=='1') location.replace('/');
+</script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = { theme: { extend: { colors: {
@@ -18,8 +21,8 @@ tailwind.config = { theme: { extend: { colors: {
 </head>
 <body class="bg-slate-100 text-slate-800">
 
-<div id="modeBanner" class="bg-amber-100 text-amber-800 text-center text-xs py-1.5">
-  Demo mode — loading…
+<div id="modeBanner" class="hidden bg-amber-100 text-amber-800 text-center text-xs py-1.5">
+  Loading…
 </div>
 
 <header class="bg-navy text-white shadow">
@@ -42,7 +45,7 @@ tailwind.config = { theme: { extend: { colors: {
           <option value="admin">Admin</option>
         </select>
       </div>
-      <button onclick="setAuthed(false);go('login')" class="px-3 py-1.5 rounded hover:bg-white/10 text-white/70">Sign out</button>
+      <button onclick="signOut()" class="px-3 py-1.5 rounded hover:bg-white/10 text-white/70">Sign out</button>
     </nav>
   </div>
 </header>
@@ -127,8 +130,11 @@ function loadRole(){ try{ role=localStorage.getItem('afe_role')||role; }catch(e)
 function saveRole(){ localStorage.setItem('afe_role', role); }
 function save(){ if(liveMode){ saveRole(); return; } state.role=role; saveRole(); localStorage.setItem('afe_demo', JSON.stringify(state)); }
 function resetDemo(){ liveMode=false; liveError=null; localStorage.removeItem('afe_demo'); state=seed(); role='reviewer'; save(); updateModeBanner(); document.getElementById('roleSel').value=role; go('dashboard'); }
+function signOut(){ setAuthed(false); location.replace('/'); }
+
 function updateModeBanner(message){
   const el=document.getElementById('modeBanner');
+  el.classList.remove('hidden');
   if(liveMode){
     el.className='bg-emerald-100 text-emerald-900 text-center text-xs py-1.5';
     const total=state.total!=null?` · ${state.total} total in database`:'';
@@ -145,13 +151,12 @@ function updateModeBanner(message){
   }
 }
 async function loadLive(){
-  if(!isAuthed()) return false;
   updateModeBanner('Loading requests from SiteGround…');
   try{
     const res=await apiFetch('/api/requests?limit=200');
     const data=await res.json().catch(()=>({}));
     if(!res.ok || !data.live || !Array.isArray(data.requests)){
-      if(res.status===401){ setAuthed(false); throw new Error('Session expired — sign in again.'); }
+      if(res.status===401){ setAuthed(false); location.replace('/'); return false; }
       throw new Error(data.error || `Failed to load requests (HTTP ${res.status})`);
     }
     liveMode=true;
@@ -171,7 +176,7 @@ async function loadLive(){
     return false;
   }
 }
-function retryLive(){ if(!isAuthed()){ go('login'); return; } loadLive().then(ok=>{ if(ok) render(); }); }
+function retryLive(){ loadLive().then(ok=>{ if(ok) render(); }); }
 
 /* ---- workflow transitions (pure-ish; also unit-tested in Node) ---- */
 function buApprove(r){ log(r,'BU Leader approved',ROLE_NAME.bu);
@@ -195,7 +200,12 @@ function actionsFor(r){
 
 /* ============================ VIEWS ============================ */
 const app=()=>document.getElementById('app');
-function go(v){ if(v!=='login' && !isAuthed()){ v='login'; } view=v; document.getElementById('topnav').style.visibility = v==='login'?'hidden':'visible'; render(); window.scrollTo(0,0); }
+function go(v){
+  if(v==='login'){ signOut(); return; }
+  view=v;
+  document.getElementById('topnav').style.visibility = v==='login'?'hidden':'visible';
+  render(); window.scrollTo(0,0);
+}
 function setRole(r){ role=r; save(); if(view==='detail'&&currentId) open(currentId); else render(); }
 function newRequest(){ if(liveMode){ alert('New requests are disabled in live read-only mode.'); return; } wizard={step:1,data:{type:'new_equipment'}}; go('wizard'); }
 async function open(id){
@@ -398,7 +408,7 @@ function submitWizard(){
 /* boot */
 loadRole();
 document.getElementById('roleSel').value=role;
-loadLive().finally(()=>go(isAuthed()?'dashboard':'login'));
+loadLive().finally(()=>go('dashboard'));
 </script>
 </body>
 </html>
