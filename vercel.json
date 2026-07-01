@@ -1,12 +1,11 @@
 {
   "installCommand": "npm install",
   "buildCommand": "",
-  "outputDirectory": "afe-rebuild/prototype",
-  "cleanUrls": true,
+  "outputDirectory": "sandbox/public",
+  "cleanUrls": false,
   "rewrites": [
     { "source": "/", "destination": "/login.html" },
-    { "source": "/app", "destination": "/index.html" },
-    { "source": "/demo", "destination": "/demo.html" }
+    { "source": "/app", "destination": "/app.html" }
   ],
   "headers": [
     {

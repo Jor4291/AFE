@@ -1,5 +1,6 @@
 # Legacy production app — credentials in source; deploy stays on SiteGround
 public_html/
+legacy/
 
 # Hosting / SSL artifacts
 certificate.key
@@ -15,6 +16,13 @@ webstats/
 .env.*.local
 .vercel
 node_modules/
+
+# Laravel (apps/portal)
+apps/portal/vendor/
+apps/portal/.env
+apps/portal/storage/
+apps/portal/bootstrap/cache/
+apps/portal/public/storage
 
 # OS / editor
 .DS_Store

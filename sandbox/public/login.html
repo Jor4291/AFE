@@ -1,16 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="auth-checking">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sign in — IT Equipment Portal</title>
+<style>html.auth-checking body{visibility:hidden}</style>
+<script src="/js/auth.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = { theme: { extend: { colors: {
   navy: { DEFAULT:'#0b3a52', dark:'#082b3d', light:'#155172' },
   brandaccent:'#2f9e8f'
 } } } };
-if(sessionStorage.getItem('afe_authed')==='1') location.replace('/app');
 </script>
 <style>
   body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;}
@@ -26,44 +27,28 @@ if(sessionStorage.getItem('afe_authed')==='1') location.replace('/app');
   </div>
   <label class="block text-sm font-medium mb-1">Username</label>
   <input id="loginUser" type="text" autocomplete="username" placeholder="Admin" class="w-full border rounded-lg px-3 py-2 mb-3 focus:ring-2 focus:ring-navy outline-none">
-  <div class="flex items-center justify-between mb-1">
-    <label class="block text-sm font-medium">Password</label>
-  </div>
+  <label class="block text-sm font-medium mb-1">Password</label>
   <input id="loginPass" type="password" autocomplete="current-password" placeholder="Password" class="w-full border rounded-lg px-3 py-2 mb-2 focus:ring-2 focus:ring-navy outline-none">
   <p id="loginError" class="text-red-600 text-xs mb-3 hidden"></p>
   <button type="button" id="loginBtn" class="w-full bg-navy hover:bg-navy-dark text-white rounded-lg py-2.5 font-medium">Sign in</button>
-
-  <div class="flex items-center gap-3 my-4 text-xs text-slate-400">
-    <span class="flex-1 h-px bg-slate-200"></span>OR<span class="flex-1 h-px bg-slate-200"></span>
-  </div>
-  <button type="button" id="ssoBtn" class="w-full border border-slate-300 hover:bg-slate-50 rounded-lg py-2.5 font-medium text-sm flex items-center justify-center gap-2">
-    <span class="inline-grid grid-cols-2 gap-0.5 w-3.5 h-3.5"><span class="bg-[#f25022]"></span><span class="bg-[#7fba00]"></span><span class="bg-[#00a4ef]"></span><span class="bg-[#ffb900]"></span></span>
-    Sign in with Microsoft 365
-  </button>
-  <p class="text-xs text-center text-slate-400 mt-6">Internal demo environment</p>
+  <p class="text-xs text-center text-slate-400 mt-6">Internal preview environment</p>
 </div>
 
 <script>
-const AUTH_KEY='afe_authed';
-const AUTH_TOKEN_KEY='afe_auth';
-
-function authToken(user, pass){ return 'Basic '+btoa(`${user}:${pass}`); }
-
 async function tryLogin(){
   const user=document.getElementById('loginUser').value.trim();
   const pass=document.getElementById('loginPass').value;
   const err=document.getElementById('loginError');
   const btn=document.getElementById('loginBtn');
-  const token=authToken(user, pass);
   btn.disabled=true;
   btn.textContent='Signing in…';
   try{
+    const token=AFEAuth.setToken(user, pass);
     const res=await fetch('/api/auth-check',{headers:{Authorization:token,Accept:'application/json'}});
     if(!res.ok) throw new Error('Invalid credentials');
-    sessionStorage.setItem(AUTH_TOKEN_KEY, token);
-    sessionStorage.setItem(AUTH_KEY, '1');
     location.replace('/app');
   }catch{
+    AFEAuth.clear();
     err.textContent='Invalid username or password.';
     err.classList.remove('hidden');
     btn.disabled=false;
@@ -72,12 +57,9 @@ async function tryLogin(){
 }
 
 document.getElementById('loginBtn').addEventListener('click', tryLogin);
-document.getElementById('ssoBtn').addEventListener('click',()=>{
-  document.getElementById('loginError').textContent='Microsoft SSO is not enabled in this demo.';
-  document.getElementById('loginError').classList.remove('hidden');
-});
 document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') tryLogin(); });
 document.getElementById('loginUser').addEventListener('keydown', e=>{ if(e.key==='Enter') tryLogin(); });
+AFEAuth.initLoginPage();
 </script>
 </body>
 </html>

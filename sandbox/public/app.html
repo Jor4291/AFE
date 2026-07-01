@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" class="auth-checking">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IT Equipment Portal</title>
+<style>html.auth-checking body{visibility:hidden}</style>
+<script src="/js/auth.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { theme: { extend: { colors: {
+  navy: { DEFAULT:'#0b3a52', dark:'#082b3d', light:'#155172' },
+  brandaccent:'#2f9e8f'
+} } } };
+</script>
+<style>
+  body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;}
+  .screen{display:none} .screen.active{display:block}
+  .step{display:none} .step.active{display:block}
+</style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+
+<div id="modeBanner" class="hidden bg-sky-100 text-sky-900 text-center text-xs py-1.5">Loading…</div>
+
+<header class="bg-navy text-white shadow">
+  <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded bg-white/15 grid place-items-center font-bold">NL</div>
+      <span class="font-semibold tracking-wide">IT Equipment Portal</span>
+    </div>
+    <nav class="hidden md:flex items-center gap-1 text-sm">
+      <button data-screen="dashboard" class="navbtn px-3 py-1.5 rounded hover:bg-white/10">Dashboard</button>
+      <button data-screen="wizard" class="navbtn px-3 py-1.5 rounded hover:bg-white/10">New Request</button>
+      <button type="button" id="sampleBtn" class="px-3 py-1.5 rounded hover:bg-white/10">Sample Request</button>
+      <span class="mx-2 h-5 w-px bg-white/20"></span>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-white/70">Viewing as</span>
+        <select id="roleSel" class="bg-navy-light text-white text-xs rounded px-2 py-1 border border-white/20">
+          <option value="reviewer">Reviewer (Megan)</option>
+          <option value="bu">BU Leader</option>
+          <option value="it">IT / Helpdesk</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <button type="button" id="signOutBtn" class="px-3 py-1.5 rounded hover:bg-white/10 text-white/70">Sign out</button>
+    </nav>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-6">
+
+<section id="dashboard" class="screen active">
+  <div class="flex items-center justify-between mb-5">
+    <div>
+      <h1 class="text-2xl font-semibold text-navy">Requests</h1>
+      <p class="text-sm text-slate-500" id="roleHint">Reviewing the queue as Megan McDaniel</p>
+    </div>
+    <button data-screen="wizard" class="navbtn bg-navy hover:bg-navy-dark text-white rounded-lg px-4 py-2 text-sm font-medium">+ New request</button>
+  </div>
+  <div id="pipelineCards" class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6"></div>
+  <div class="flex flex-wrap gap-2 mb-3 text-sm">
+    <input id="searchInput" placeholder="Search name, AFE #, office…" class="border rounded-lg px-3 py-1.5 w-64 outline-none focus:ring-2 focus:ring-navy">
+    <select id="typeFilter" class="border rounded-lg px-3 py-1.5"><option value="">All types</option><option value="replacement">Replacement (repurposed)</option><option value="new_equipment">New equipment</option></select>
+    <select id="stageFilter" class="border rounded-lg px-3 py-1.5"><option value="">All stages</option><option value="reviewer_review">Needs your review</option><option value="bu_review">BU review</option><option value="approved">Approved</option><option value="ordered">Ordered</option><option value="shipped">Shipped</option><option value="received">Received</option><option value="denied">Denied</option></select>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-slate-500 text-left">
+        <tr>
+          <th class="px-4 py-3 font-medium">AFE #</th>
+          <th class="px-4 py-3 font-medium">Employee</th>
+          <th class="px-4 py-3 font-medium">Type</th>
+          <th class="px-4 py-3 font-medium">Equipment</th>
+          <th class="px-4 py-3 font-medium">Division</th>
+          <th class="px-4 py-3 font-medium">Office</th>
+          <th class="px-4 py-3 font-medium">Stage</th>
+          <th class="px-4 py-3 font-medium text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody id="requestRows" class="divide-y">
+        <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="wizard" class="screen">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-2xl font-semibold text-navy mb-1">New equipment request</h1>
+    <p class="text-sm text-slate-500 mb-6">Step <span id="stepNum">1</span> of 4</p>
+    <div class="flex items-center mb-8">
+      <div class="flex-1 flex items-center" id="progress">
+        <div class="wstep flex items-center gap-2"><div class="dot w-7 h-7 rounded-full grid place-items-center text-xs font-semibold">1</div><span class="text-xs hidden sm:inline">Equipment</span></div>
+        <div class="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+        <div class="wstep flex items-center gap-2"><div class="dot w-7 h-7 rounded-full grid place-items-center text-xs font-semibold">2</div><span class="text-xs hidden sm:inline">Employee</span></div>
+        <div class="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+        <div class="wstep flex items-center gap-2"><div class="dot w-7 h-7 rounded-full grid place-items-center text-xs font-semibold">3</div><span class="text-xs hidden sm:inline">Details</span></div>
+        <div class="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+        <div class="wstep flex items-center gap-2"><div class="dot w-7 h-7 rounded-full grid place-items-center text-xs font-semibold">4</div><span class="text-xs hidden sm:inline">Approver</span></div>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <div class="step active" data-step="1">
+        <h2 class="font-medium text-slate-700 mb-4">What's needed?</h2>
+        <p class="text-sm text-slate-500">Request submission will be available in the production Laravel app.</p>
+      </div>
+      <div class="flex justify-between mt-6">
+        <button id="prevBtn" class="px-4 py-2 rounded-lg border text-slate-600 hover:bg-slate-50">Back</button>
+        <button id="nextBtn" class="px-5 py-2 rounded-lg bg-navy hover:bg-navy-dark text-white font-medium">Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="detail" class="screen">
+  <button data-screen="dashboard" class="navbtn text-sm text-navy mb-4">← Back to requests</button>
+  <div id="detailContent" class="grid md:grid-cols-3 gap-6"></div>
+</section>
+
+</main>
+
+<footer id="footer" class="text-center text-xs text-slate-400 py-6"></footer>
+
+<script src="/js/app.js"></script>
+<script>
+window.onAuthReady = () => loadLive().finally(() => show('dashboard'));
+AFEAuth.initAppPage();
+</script>
+</body>
+</html>
