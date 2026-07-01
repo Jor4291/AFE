@@ -207,9 +207,6 @@ function apiFetch(url, opts={}){
 }
 
 function signOut(){ setAuthed(false); location.replace('/'); }
-
-async function tryLogin(){ location.replace('/'); }
-
 function badge(stage){const s=STAGES[stage]||{label:stage,cls:'bg-slate-100'};return `<span class="text-xs ${s.cls} px-2 py-0.5 rounded font-medium">${s.label}</span>`;}
 function typeBadge(t){return t==='new_equipment'?`<span class="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded">New equipment</span>`:`<span class="text-xs bg-sky-100 text-sky-700 px-2 py-0.5 rounded">Replacement</span>`;}
 function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
