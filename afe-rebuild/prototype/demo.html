@@ -18,9 +18,8 @@ tailwind.config = { theme: { extend: { colors: {
 </head>
 <body class="bg-slate-100 text-slate-800">
 
-<div class="bg-amber-100 text-amber-800 text-center text-xs py-1.5">
-  Demo mode — all data is faked in your browser. Nothing is saved to a server.
-  <button onclick="resetDemo()" class="underline font-medium ml-2">Reset demo data</button>
+<div id="modeBanner" class="bg-amber-100 text-amber-800 text-center text-xs py-1.5">
+  Demo mode — loading…
 </div>
 
 <header class="bg-navy text-white shadow">
@@ -70,7 +69,7 @@ const STAGES = {
 };
 const ROLE_NAME = {reviewer:'Megan McDaniel',bu:'Denny Garner',it:'Help Desk',admin:'System Admin'};
 
-let state, role='reviewer', view='login', currentId=null, wizard={step:1,data:{}};
+let state, role='reviewer', view='login', currentId=null, wizard={step:1,data:{}}, liveMode=false;
 
 function seed(){
   return { seq: 4822, role:'reviewer', requests: [
@@ -89,8 +88,36 @@ function mk(id,fn,ln,type,equip,office,bu,cc,reason,submitTo,stage,events){
           reason,submitTo,stage,audit:events.map(e=>({action:e[0],actor:e[1],at:'Jun 2026'}))};
 }
 function load(){ try{ state = JSON.parse(localStorage.getItem('afe_demo')); }catch(e){} if(!state){ state=seed(); save(); } role=state.role||'reviewer'; }
-function save(){ state.role=role; localStorage.setItem('afe_demo', JSON.stringify(state)); }
-function resetDemo(){ state=seed(); role='reviewer'; save(); document.getElementById('roleSel').value=role; go('dashboard'); }
+function save(){ if(liveMode) return; state.role=role; localStorage.setItem('afe_demo', JSON.stringify(state)); }
+function resetDemo(){ liveMode=false; state=seed(); role='reviewer'; save(); updateModeBanner(); document.getElementById('roleSel').value=role; go('dashboard'); }
+function updateModeBanner(){
+  const el=document.getElementById('modeBanner');
+  if(liveMode){
+    el.className='bg-emerald-100 text-emerald-900 text-center text-xs py-1.5';
+    el.innerHTML='Live data from SiteGround (read-only). Workflow actions are disabled. <button onclick="resetDemo()" class="underline font-medium ml-2">Switch to offline demo</button>';
+  }else{
+    el.className='bg-amber-100 text-amber-800 text-center text-xs py-1.5';
+    el.innerHTML='Offline demo — data is faked in your browser. <button onclick="resetDemo()" class="underline font-medium ml-2">Reset demo data</button>';
+  }
+}
+async function loadLive(){
+  try{
+    const res=await fetch('/api/requests?limit=100');
+    if(!res.ok) throw new Error(await res.text());
+    const data=await res.json();
+    if(!data.requests?.length) throw new Error('No requests returned');
+    liveMode=true;
+    const maxId=Math.max(...data.requests.map(r=>Number(r.id)||0));
+    state={seq:maxId+1, role, requests:data.requests};
+    updateModeBanner();
+    return true;
+  }catch(e){
+    console.warn('Live DB unavailable, using offline demo data', e);
+    liveMode=false;
+    updateModeBanner();
+    return false;
+  }
+}
 
 /* ---- workflow transitions (pure-ish; also unit-tested in Node) ---- */
 function buApprove(r){ log(r,'BU Leader approved',ROLE_NAME.bu);
@@ -104,6 +131,7 @@ function log(r,action,actor){ r.audit.push({action,actor,at:'just now'}); }
 
 /* ---- what can the current role do to a request right now? ---- */
 function actionsFor(r){
+  if(liveMode) return [];
   const a=[];
   if((role==='bu'||role==='admin') && r.stage==='bu_review'){ a.push(['Approve',()=>{buApprove(r);save();open(r.id);},'ok'],['Deny',()=>{deny(r,ROLE_NAME.bu);save();open(r.id);},'no']); }
   if((role==='reviewer'||role==='admin') && r.stage==='reviewer_review'){ a.push(['Approve → notify Helpdesk',()=>{reviewerApprove(r);save();open(r.id);},'ok'],['Deny',()=>{deny(r,ROLE_NAME.reviewer);save();open(r.id);},'no']); }
@@ -115,7 +143,7 @@ function actionsFor(r){
 const app=()=>document.getElementById('app');
 function go(v){ view=v; document.getElementById('topnav').style.visibility = v==='login'?'hidden':'visible'; render(); window.scrollTo(0,0); }
 function setRole(r){ role=r; save(); if(view==='detail'&&currentId) open(currentId); else render(); }
-function newRequest(){ wizard={step:1,data:{type:'new_equipment'}}; go('wizard'); }
+function newRequest(){ if(liveMode){ alert('New requests are disabled in live read-only mode.'); return; } wizard={step:1,data:{type:'new_equipment'}}; go('wizard'); }
 function open(id){ currentId=id; go('detail'); }
 
 function badge(stage){ const s=STAGES[stage]; return `<span class="text-xs ${s.cls} px-2 py-0.5 rounded font-medium">${s.label}</span>`; }
@@ -302,7 +330,8 @@ function submitWizard(){
 /* boot */
 load();
 document.getElementById('roleSel').value=role;
-go('login');
+updateModeBanner();
+loadLive().finally(()=>go('login'));
 </script>
 </body>
 </html>
