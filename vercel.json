@@ -4,8 +4,8 @@
   "outputDirectory": "afe-rebuild/prototype",
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/", "destination": "/demo.html" },
-    { "source": "/design", "destination": "/index.html" }
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/demo", "destination": "/demo.html" }
   ],
   "headers": [
     {
