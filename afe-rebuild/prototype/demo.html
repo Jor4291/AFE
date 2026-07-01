@@ -42,7 +42,7 @@ tailwind.config = { theme: { extend: { colors: {
           <option value="admin">Admin</option>
         </select>
       </div>
-      <button onclick="go('login')" class="px-3 py-1.5 rounded hover:bg-white/10 text-white/70">Sign out</button>
+      <button onclick="setAuthed(false);go('login')" class="px-3 py-1.5 rounded hover:bg-white/10 text-white/70">Sign out</button>
     </nav>
   </div>
 </header>
@@ -72,6 +72,26 @@ const ROLE_NAME = {reviewer:'Megan McDaniel',bu:'Denny Garner',it:'Help Desk',ad
 let state, role='reviewer', view='login', currentId=null, wizard={step:1,data:{}}, liveMode=false, liveError=null;
 
 const fetchOpts = { credentials: 'same-origin', headers: { Accept: 'application/json' } };
+const DEMO_USER = 'Admin';
+const DEMO_PASS = 'AfePortal123!@#';
+const AUTH_KEY = 'afe_authed';
+
+function isAuthed(){ return sessionStorage.getItem(AUTH_KEY)==='1'; }
+function setAuthed(on){ if(on) sessionStorage.setItem(AUTH_KEY,'1'); else sessionStorage.removeItem(AUTH_KEY); }
+
+function tryLogin(){
+  const user=(document.getElementById('loginUser')?.value||'').trim();
+  const pass=document.getElementById('loginPass')?.value||'';
+  const err=document.getElementById('loginError');
+  if(user===DEMO_USER && pass===DEMO_PASS){
+    err?.classList.add('hidden');
+    setAuthed(true);
+    go('dashboard');
+    return true;
+  }
+  if(err){ err.textContent='Invalid username or password. Use Admin / AfePortal123!@#'; err.classList.remove('hidden'); }
+  return false;
+}
 
 function seed(){
   return { seq: 4822, role:'reviewer', requests: [
@@ -159,7 +179,7 @@ function actionsFor(r){
 
 /* ============================ VIEWS ============================ */
 const app=()=>document.getElementById('app');
-function go(v){ view=v; document.getElementById('topnav').style.visibility = v==='login'?'hidden':'visible'; render(); window.scrollTo(0,0); }
+function go(v){ if(v!=='login' && !isAuthed()){ v='login'; } view=v; document.getElementById('topnav').style.visibility = v==='login'?'hidden':'visible'; render(); window.scrollTo(0,0); }
 function setRole(r){ role=r; save(); if(view==='detail'&&currentId) open(currentId); else render(); }
 function newRequest(){ if(liveMode){ alert('New requests are disabled in live read-only mode.'); return; } wizard={step:1,data:{type:'new_equipment'}}; go('wizard'); }
 async function open(id){
@@ -192,17 +212,18 @@ function renderLogin(){
         <h1 class="mt-3 text-xl font-semibold text-navy">IT Equipment Portal</h1>
         <p class="text-sm text-slate-500">Sign in to continue</p>
       </div>
-      <label class="block text-sm font-medium mb-1">Email</label>
-      <input type="email" class="w-full border rounded-lg px-3 py-2 mb-3 outline-none focus:ring-2 focus:ring-navy" value="you@nextlevelstudio.com">
+      <label class="block text-sm font-medium mb-1">Username</label>
+      <input id="loginUser" type="text" autocomplete="username" placeholder="Admin" class="w-full border rounded-lg px-3 py-2 mb-3 outline-none focus:ring-2 focus:ring-navy">
       <div class="flex items-center justify-between mb-1"><label class="text-sm font-medium">Password</label><a class="text-xs text-navy">Forgot?</a></div>
-      <input type="password" class="w-full border rounded-lg px-3 py-2 mb-5 outline-none focus:ring-2 focus:ring-navy" value="••••••••">
-      <button onclick="go('dashboard')" class="w-full bg-navy hover:bg-navy-dark text-white rounded-lg py-2.5 font-medium">Sign in</button>
+      <input id="loginPass" type="password" autocomplete="current-password" placeholder="AfePortal123!@#" class="w-full border rounded-lg px-3 py-2 mb-2 outline-none focus:ring-2 focus:ring-navy">
+      <p id="loginError" class="text-red-600 text-xs mb-3 hidden"></p>
+      <button onclick="tryLogin()" class="w-full bg-navy hover:bg-navy-dark text-white rounded-lg py-2.5 font-medium">Sign in</button>
       <div class="flex items-center gap-3 my-4 text-xs text-slate-400"><span class="flex-1 h-px bg-slate-200"></span>OR<span class="flex-1 h-px bg-slate-200"></span></div>
-      <button onclick="go('dashboard')" class="w-full border border-slate-300 hover:bg-slate-50 rounded-lg py-2.5 text-sm font-medium flex items-center justify-center gap-2">
+      <button onclick="document.getElementById('loginError').textContent='Microsoft SSO is not enabled in this demo. Use Admin / AfePortal123!@#'; document.getElementById('loginError').classList.remove('hidden');" class="w-full border border-slate-300 hover:bg-slate-50 rounded-lg py-2.5 text-sm font-medium flex items-center justify-center gap-2">
         <span class="inline-grid grid-cols-2 gap-0.5 w-3.5 h-3.5"><span class="bg-[#f25022]"></span><span class="bg-[#7fba00]"></span><span class="bg-[#00a4ef]"></span><span class="bg-[#ffb900]"></span></span>
         Sign in with Microsoft 365
       </button>
-      <p class="text-xs text-center text-slate-400 mt-4">Email/password for everyone · Microsoft SSO optional</p>
+      <p class="text-xs text-center text-slate-400 mt-4">Demo login · Username <span class="font-medium text-slate-500">Admin</span> · Password <span class="font-medium text-slate-500">AfePortal123!@#</span></p>
     </div>
   </div>`;
 }
@@ -361,7 +382,7 @@ function submitWizard(){
 /* boot */
 loadRole();
 document.getElementById('roleSel').value=role;
-loadLive().finally(()=>go('login'));
+loadLive().finally(()=>go(isAuthed()?'dashboard':'login'));
 </script>
 </body>
 </html>

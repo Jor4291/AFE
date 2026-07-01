@@ -59,23 +59,24 @@ tailwind.config = { theme: { extend: { colors: {
         <h1 class="mt-3 text-xl font-semibold text-navy">IT Equipment Portal</h1>
         <p class="text-sm text-slate-500">Sign in to continue</p>
       </div>
-      <label class="block text-sm font-medium mb-1">Email</label>
-      <input type="email" class="w-full border rounded-lg px-3 py-2 mb-3 focus:ring-2 focus:ring-navy outline-none" value="you@nextlevelstudio.com">
+      <label class="block text-sm font-medium mb-1">Username</label>
+      <input id="loginUser" type="text" autocomplete="username" placeholder="Admin" class="w-full border rounded-lg px-3 py-2 mb-3 focus:ring-2 focus:ring-navy outline-none">
       <div class="flex items-center justify-between mb-1">
         <label class="block text-sm font-medium">Password</label>
         <a href="#" class="text-xs text-navy hover:underline">Forgot?</a>
       </div>
-      <input type="password" class="w-full border rounded-lg px-3 py-2 mb-5 focus:ring-2 focus:ring-navy outline-none" value="••••••••">
-      <button data-screen="dashboard" class="navbtn w-full bg-navy hover:bg-navy-dark text-white rounded-lg py-2.5 font-medium">Sign in</button>
+      <input id="loginPass" type="password" autocomplete="current-password" placeholder="AfePortal123!@#" class="w-full border rounded-lg px-3 py-2 mb-2 focus:ring-2 focus:ring-navy outline-none">
+      <p id="loginError" class="text-red-600 text-xs mb-3 hidden"></p>
+      <button type="button" id="loginBtn" class="w-full bg-navy hover:bg-navy-dark text-white rounded-lg py-2.5 font-medium">Sign in</button>
 
       <div class="flex items-center gap-3 my-4 text-xs text-slate-400">
         <span class="flex-1 h-px bg-slate-200"></span>OR<span class="flex-1 h-px bg-slate-200"></span>
       </div>
-      <button data-screen="dashboard" class="navbtn w-full border border-slate-300 hover:bg-slate-50 rounded-lg py-2.5 font-medium text-sm flex items-center justify-center gap-2">
+      <button type="button" id="ssoBtn" class="w-full border border-slate-300 hover:bg-slate-50 rounded-lg py-2.5 font-medium text-sm flex items-center justify-center gap-2">
         <span class="inline-grid grid-cols-2 gap-0.5 w-3.5 h-3.5"><span class="bg-[#f25022]"></span><span class="bg-[#7fba00]"></span><span class="bg-[#00a4ef]"></span><span class="bg-[#ffb900]"></span></span>
         Sign in with Microsoft 365
       </button>
-      <p class="text-xs text-center text-slate-400 mt-4">Email/password works for everyone · Microsoft SSO optional for @nortonlilly.com</p>
+      <p class="text-xs text-center text-slate-400 mt-4">Demo login · Username <span class="font-medium text-slate-500">Admin</span> · Password <span class="font-medium text-slate-500">AfePortal123!@#</span></p>
     </div>
   </div>
 </section>
@@ -217,7 +218,28 @@ const STAGES={
   denied:{label:'Denied',cls:'bg-red-100 text-red-700'},
 };
 const fetchOpts={credentials:'same-origin',headers:{Accept:'application/json'}};
+const DEMO_USER='Admin';
+const DEMO_PASS='AfePortal123!@#';
+const AUTH_KEY='afe_authed';
 let requests=[], total=0, liveMode=false, liveError=null, currentId=null;
+
+function isAuthed(){ return sessionStorage.getItem(AUTH_KEY)==='1'; }
+function setAuthed(on){ if(on) sessionStorage.setItem(AUTH_KEY,'1'); else sessionStorage.removeItem(AUTH_KEY); }
+
+function tryLogin(){
+  const user=document.getElementById('loginUser').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  const err=document.getElementById('loginError');
+  if(user===DEMO_USER && pass===DEMO_PASS){
+    err.classList.add('hidden');
+    setAuthed(true);
+    show('dashboard');
+    return true;
+  }
+  err.textContent='Invalid username or password. Use Admin / AfePortal123!@#';
+  err.classList.remove('hidden');
+  return false;
+}
 
 function badge(stage){const s=STAGES[stage]||{label:stage,cls:'bg-slate-100'};return `<span class="text-xs ${s.cls} px-2 py-0.5 rounded font-medium">${s.label}</span>`;}
 function typeBadge(t){return t==='new_equipment'?`<span class="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded">New equipment</span>`:`<span class="text-xs bg-sky-100 text-sky-700 px-2 py-0.5 rounded">Replacement</span>`;}
@@ -359,13 +381,24 @@ async function loadLive(){
 
 // screen switching
 function show(id){
+  if(id!=='login' && !isAuthed()){ id='login'; }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   document.getElementById('topnav').style.visibility = (id==='login') ? 'hidden' : 'visible';
   if(id==='dashboard') renderTable();
   window.scrollTo(0,0);
 }
-document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>show(b.dataset.screen)));
+document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>{
+  if(b.dataset.screen==='login') setAuthed(false);
+  show(b.dataset.screen);
+}));
+document.getElementById('loginBtn').addEventListener('click', tryLogin);
+document.getElementById('ssoBtn').addEventListener('click',()=>{
+  document.getElementById('loginError').textContent='Microsoft SSO is not enabled in this demo. Use Admin / AfePortal123!@#';
+  document.getElementById('loginError').classList.remove('hidden');
+});
+document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') tryLogin(); });
+document.getElementById('loginUser').addEventListener('keydown', e=>{ if(e.key==='Enter') tryLogin(); });
 
 // role hint
 const hints={reviewer:'Reviewing the queue as Megan McDaniel',bu:'Approving requests submitted to you',it:'Fulfilling approved requests',admin:'Full access · users, roles, audit log'};
@@ -392,7 +425,7 @@ function renderStep(){
 document.getElementById('nextBtn').addEventListener('click',()=>{ if(liveMode){alert('New requests are disabled in live read-only mode.');return;} if(step<maxStep){step++;renderStep();} else {show('dashboard');step=1;renderStep();} });
 document.getElementById('prevBtn').addEventListener('click',()=>{ if(step>1){step--;renderStep();} });
 renderStep();
-loadLive().finally(()=>show('login'));
+loadLive().finally(()=>show(isAuthed()?'dashboard':'login'));
 </script>
 </body>
 </html>
