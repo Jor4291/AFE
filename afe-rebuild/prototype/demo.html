@@ -69,7 +69,9 @@ const STAGES = {
 };
 const ROLE_NAME = {reviewer:'Megan McDaniel',bu:'Denny Garner',it:'Help Desk',admin:'System Admin'};
 
-let state, role='reviewer', view='login', currentId=null, wizard={step:1,data:{}}, liveMode=false;
+let state, role='reviewer', view='login', currentId=null, wizard={step:1,data:{}}, liveMode=false, liveError=null;
+
+const fetchOpts = { credentials: 'same-origin', headers: { Accept: 'application/json' } };
 
 function seed(){
   return { seq: 4822, role:'reviewer', requests: [
@@ -87,37 +89,53 @@ function mk(id,fn,ln,type,equip,office,bu,cc,reason,submitTo,stage,events){
   return {id,number:id,first:fn,last:ln,type,equipment:equip,office,businessUnit:bu,costCenter:cc,
           reason,submitTo,stage,audit:events.map(e=>({action:e[0],actor:e[1],at:'Jun 2026'}))};
 }
-function load(){ try{ state = JSON.parse(localStorage.getItem('afe_demo')); }catch(e){} if(!state){ state=seed(); save(); } role=state.role||'reviewer'; }
+function load(){ try{ state = JSON.parse(localStorage.getItem('afe_demo')); role=state?.role||'reviewer'; }catch(e){ state=null; } }
 function save(){ if(liveMode) return; state.role=role; localStorage.setItem('afe_demo', JSON.stringify(state)); }
-function resetDemo(){ liveMode=false; state=seed(); role='reviewer'; save(); updateModeBanner(); document.getElementById('roleSel').value=role; go('dashboard'); }
-function updateModeBanner(){
+function resetDemo(){ liveMode=false; liveError=null; state=seed(); role='reviewer'; save(); updateModeBanner(); document.getElementById('roleSel').value=role; go('dashboard'); }
+function updateModeBanner(message){
   const el=document.getElementById('modeBanner');
   if(liveMode){
     el.className='bg-emerald-100 text-emerald-900 text-center text-xs py-1.5';
-    el.innerHTML='Live data from SiteGround (read-only). Workflow actions are disabled. <button onclick="resetDemo()" class="underline font-medium ml-2">Switch to offline demo</button>';
+    el.innerHTML=`Live data from SiteGround (${state.requests.length} requests, read-only). Workflow actions are disabled. <button onclick="resetDemo()" class="underline font-medium ml-2">Switch to offline demo</button>`;
+  }else if(liveError){
+    el.className='bg-red-100 text-red-900 text-center text-xs py-1.5';
+    el.innerHTML=`Live database unavailable: ${liveError} <button onclick="retryLive()" class="underline font-medium ml-2">Retry</button> <button onclick="resetDemo()" class="underline font-medium ml-2">Use offline demo</button>`;
+  }else if(message){
+    el.className='bg-sky-100 text-sky-900 text-center text-xs py-1.5';
+    el.textContent=message;
   }else{
     el.className='bg-amber-100 text-amber-800 text-center text-xs py-1.5';
-    el.innerHTML='Offline demo — data is faked in your browser. <button onclick="resetDemo()" class="underline font-medium ml-2">Reset demo data</button>';
+    el.innerHTML='Offline demo — data is faked in your browser. <button onclick="retryLive()" class="underline font-medium ml-2">Try live data</button> <button onclick="resetDemo()" class="underline font-medium ml-2">Reset demo data</button>';
   }
 }
 async function loadLive(){
+  updateModeBanner('Connecting to SiteGround database…');
   try{
-    const res=await fetch('/api/requests?limit=100');
-    if(!res.ok) throw new Error(await res.text());
-    const data=await res.json();
-    if(!data.requests?.length) throw new Error('No requests returned');
+    const health=await fetch('/api/db-health', fetchOpts);
+    const healthData=await health.json().catch(()=>({}));
+    if(!health.ok || !healthData.connected){
+      throw new Error(healthData.error || `Health check failed (HTTP ${health.status})`);
+    }
+    const res=await fetch('/api/requests?limit=100', fetchOpts);
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || `Request failed (HTTP ${res.status})`);
+    if(!data.live || !Array.isArray(data.requests)) throw new Error('Unexpected API response');
     liveMode=true;
-    const maxId=Math.max(...data.requests.map(r=>Number(r.id)||0));
+    liveError=null;
+    const maxId=data.requests.reduce((m,r)=>Math.max(m,Number(r.id)||0),0);
     state={seq:maxId+1, role, requests:data.requests};
     updateModeBanner();
     return true;
   }catch(e){
-    console.warn('Live DB unavailable, using offline demo data', e);
+    console.warn('Live DB unavailable', e);
     liveMode=false;
+    liveError=e.message || String(e);
+    if(!state){ state=seed(); }
     updateModeBanner();
     return false;
   }
 }
+function retryLive(){ loadLive().then(ok=>{ if(ok && view!=='login') render(); }); }
 
 /* ---- workflow transitions (pure-ish; also unit-tested in Node) ---- */
 function buApprove(r){ log(r,'BU Leader approved',ROLE_NAME.bu);
@@ -330,7 +348,6 @@ function submitWizard(){
 /* boot */
 load();
 document.getElementById('roleSel').value=role;
-updateModeBanner();
 loadLive().finally(()=>go('login'));
 </script>
 </body>
