@@ -206,7 +206,7 @@ function apiFetch(url, opts={}){
   return fetch(url,{...opts,credentials:'same-origin',headers});
 }
 
-function signOut(){ location.replace('/'); }
+function signOut(){ setAuthed(false); location.replace('/'); }
 
 async function tryLogin(){ location.replace('/'); }
 
