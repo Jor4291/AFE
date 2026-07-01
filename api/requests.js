@@ -1,4 +1,4 @@
-const { query } = require('../lib/db');
+const { query, getConfig } = require('../lib/db');
 const { mapSubmission } = require('../lib/map-submission');
 
 module.exports = async (req, res) => {
@@ -7,10 +7,12 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+  const limit = Math.min(Math.max(Number(req.query.limit) || 200, 1), 500);
   const id = req.query.id ? Number(req.query.id) : null;
 
   try {
+    const config = getConfig();
+
     if (id) {
       const rows = await query(
         'SELECT * FROM submissions WHERE id = ? LIMIT 1',
@@ -25,11 +27,13 @@ module.exports = async (req, res) => {
       res.status(200).json({
         live: true,
         readOnly: true,
+        connectionString: `${config.connectionString}/${config.database}`,
         request: mapSubmission(rows[0]),
       });
       return;
     }
 
+    const [{ total }] = await query('SELECT COUNT(*) AS total FROM submissions');
     const rows = await query(
       'SELECT * FROM submissions ORDER BY sub_date DESC LIMIT ?',
       [limit],
@@ -38,6 +42,8 @@ module.exports = async (req, res) => {
     res.status(200).json({
       live: true,
       readOnly: true,
+      connectionString: `${config.connectionString}/${config.database}`,
+      total,
       count: rows.length,
       requests: rows.map(mapSubmission),
     });
